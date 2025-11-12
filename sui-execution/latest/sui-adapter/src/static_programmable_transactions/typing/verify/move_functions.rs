@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::execution_mode::ExecutionMode;
-use crate::programmable_transactions::execution::check_private_generics;
+use crate::programmable_transactions::execution::check_private_generics_v2;
 use crate::sp;
 use crate::static_programmable_transactions::{env::Env, loading::ast::Type, typing::ast as T};
 use move_binary_format::{CompiledModule, file_format::Visibility};
@@ -51,7 +51,7 @@ fn move_call<Mode: ExecutionMode>(env: &Env, call: &T::MoveCall) -> Result<(), E
         arguments: _,
     } = call;
     check_signature::<Mode>(env, function)?;
-    check_private_generics(&function.runtime_id, function.name.as_ident_str())?;
+    check_private_generics_v2(&function.runtime_id, function.name.as_ident_str())?;
     check_visibility::<Mode>(env, function)?;
     Ok(())
 }
@@ -64,12 +64,12 @@ fn check_signature<Mode: ExecutionMode>(
         idx: usize,
         return_type: &T::Type,
     ) -> Result<(), ExecutionError> {
-        if let Type::Reference(_, _) = return_type {
-            if !Mode::allow_arbitrary_values() {
-                return Err(ExecutionError::from_kind(
-                    ExecutionErrorKind::InvalidPublicFunctionReturnType { idx: idx as u16 },
-                ));
-            }
+        if let Type::Reference(_, _) = return_type
+            && !Mode::allow_arbitrary_values()
+        {
+            return Err(ExecutionError::from_kind(
+                ExecutionErrorKind::InvalidPublicFunctionReturnType { idx: idx as u16 },
+            ));
         }
         Ok(())
     }
